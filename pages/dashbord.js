@@ -1,26 +1,31 @@
-import { useEffect, useState } from "react";
-import api, { setAuthToken } from "../utils/api";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import api from "../utils/api";
+import Header from "../components/Header";
+import Sidebar from "../components/Sidebar";
 
 export default function Dashboard() {
-    const router = useRouter();
-    const [user, setUser] = useState(null);
-    const [users, setUsers] = useState([]);
+  const [user, setUser] = useState(null);
+  const router = useRouter();
 
-    useEffect(() => {
-        const token = localStorage.getItem("token");
-        if (!token) router.push("/");
-        setAuthToken(token);
-        // Charger les informations selon rôle
-        api.get("/users").then(res => setUsers(res.data)).catch(err => console.log(err));
-    }, []);
+  useEffect(()=>{
+    const token = localStorage.getItem("token");
+    if(!token) return router.push("/");
+    api.get("/auth/me", { headers:{ Authorization:`Bearer ${token}` } })
+       .then(res=>setUser(res.data));
+  },[]);
 
-    return (
-        <div>
-            <h1>Dashboard</h1>
-            {users.map(u => (
-                <div key={u.id}>{u.nom} {u.prenom} ({u.role})</div>
-            ))}
+  if(!user) return <p>Chargement...</p>;
+
+  return (
+    <div style={{display:"flex"}}>
+      <Sidebar role={user.role} />
+      <div style={{flex:1}}>
+        <Header user={user} />
+        <div style={{padding:"2rem"}}>
+          <h1>Bienvenue {user.prenom} ({user.role})</h1>
         </div>
-    );
+      </div>
+    </div>
+  );
 }

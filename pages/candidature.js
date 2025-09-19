@@ -1,34 +1,31 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import api from "../utils/api";
+import Header from "../components/Header";
+import Sidebar from "../components/Sidebar";
 
-export default function Candidature() {
-    const [paiementOnline, setPaiementOnline] = useState(false);
-    const [paiementCash, setPaiementCash] = useState(false);
-    const [message, setMessage] = useState("");
+export default function Dashboard() {
+  const [user, setUser] = useState(null);
+  const router = useRouter();
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const res = await api.post("/candidature", { paiementOnline, paiementCash });
-            setMessage(res.data.message);
-        } catch (err) {
-            setMessage(err.response?.data?.message || "Erreur");
-        }
-    }
+  useEffect(()=>{
+    const token = localStorage.getItem("token");
+    if(!token) return router.push("/");
+    api.get("/auth/me", { headers:{ Authorization:`Bearer ${token}` } })
+       .then(res=>setUser(res.data));
+  },[]);
 
-    return (
-        <div>
-            <h1>Postuler à la compétition</h1>
-            <form onSubmit={handleSubmit}>
-                <label>
-                    <input type="checkbox" checked={paiementOnline} onChange={e => setPaiementOnline(e.target.checked)} /> Payer en ligne
-                </label>
-                <label>
-                    <input type="checkbox" checked={paiementCash} onChange={e => setPaiementCash(e.target.checked)} /> Payer en cash
-                </label>
-                <button type="submit">Postuler</button>
-            </form>
-            <p>{message}</p>
+  if(!user) return <p>Chargement...</p>;
+
+  return (
+    <div style={{display:"flex"}}>
+      <Sidebar role={user.role} />
+      <div style={{flex:1}}>
+        <Header user={user} />
+        <div style={{padding:"2rem"}}>
+          <h1>Bienvenue {user.prenom} ({user.role})</h1>
         </div>
-    );
+      </div>
+    </div>
+  );
 }
